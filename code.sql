@@ -1,3 +1,4 @@
+
 -- 1. Вывести информацию обо всех отправителях корреспонденции весом больше 300 граммов.
 SELECT DISTINCT s.*
 FROM senders s
@@ -13,7 +14,6 @@ WHERE s.phone_number IS NULL OR s.phone_number = '';
 
 
 -- 3. Создать таблицу, содержащую данные второго запроса с указанием информации об отправителях и параметров корреспонденции.
-CREATE TABLE temp_correspondence AS
 SELECT 
     s.sender_id,
     s.last_name,
@@ -29,6 +29,7 @@ SELECT
     c.width,
     c.height,
     c.stamp_amount
+INTO temp_correspondence
 FROM correspondence c
 JOIN senders s ON c.sender_id = s.sender_id
 WHERE s.phone_number IS NULL OR s.phone_number = '';
@@ -53,8 +54,8 @@ SELECT
     c.stamp_amount
 FROM correspondence c
 JOIN senders s ON c.sender_id = s.sender_id
-WHERE s.address ~* '(ул\.|улица|пер\.|переулок|пр\.|проспект).*(ул\.|улица|пер\.|переулок|пр\.|проспект)'
-   OR s.address LIKE '%/%';
+WHERE (s.address ~* '(ул\.|улица|пер\.|переулок|пр\.|проспект).*(ул\.|улица|пер\.|переулок|пр\.|проспект)' OR s.address LIKE '%/%')
+  AND c.track_number NOT IN (SELECT track_number FROM temp_correspondence);
 
 
 -- 5. В созданной таблице убрать все пробелы и спецсимволы из трек-номеров отправлений.
@@ -63,7 +64,6 @@ SET track_number = REGEXP_REPLACE(track_number, '[^a-zA-Zа-яА-Я0-9]', '', 'g
 
 
 -- 6. Удалить всю корреспонденцию от отправителей с номером телефона, начинающимся и заканчивающимся на одинаковые цифры в части после кода.
--- (Берем последние 7 цифр номера после кода оператора и проверяем совпадение первой и последней цифры)
 DELETE FROM temp_correspondence
 WHERE RIGHT(REGEXP_REPLACE(phone_number, '\D', '', 'g'), 7) ~ '^(\d).*\1$';
 
